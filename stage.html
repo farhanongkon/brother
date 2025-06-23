@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Stage Display - Brother Partners Day</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #004e92, #000428);
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 8px 0;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 30px;
+    }
+
+    header img {
+      height: 70px;
+    }
+
+    #mnemonic {
+      height: 120px;
+      margin: 10px auto;
+      display: block;
+    }
+
+    #latestBanner {
+      font-size: 20px;
+      font-weight: 600;
+      background-color: rgba(255, 255, 255, 0.15);
+      padding: 12px 20px;
+      border-radius: 12px;
+      margin: 10px auto;
+      width: fit-content;
+      max-width: 90%;
+      display: none;
+      animation: fadeHighlight 1s ease-in-out;
+    }
+
+    @keyframes fadeHighlight {
+      0%   { background-color: rgba(255, 255, 255, 0.3); transform: scale(1.05); }
+      100% { background-color: rgba(255, 255, 255, 0.15); transform: scale(1); }
+    }
+
+    h2 {
+      font-size: 24px;
+      margin: 6px 0 4px;
+    }
+
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 10px 16px;
+      margin: 8px auto;
+      width: 90%;
+      max-width: 1000px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 18px;
+      margin: 0;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    th {
+      background-color: rgba(255,255,255,0.15);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="global_brand_logo.png" alt="Global Brand">
+    <img id="mnemonic" src="mnemonic.png" alt="Brother Partners Day">
+    <img src="brother_logo.png" alt="Brother">
+  </header>
+
+  <div id="latestBanner"></div>
+
+  <div class="glass-panel">
+    <h2>🏆 Top 3 Buyer</h2>
+    <table>
+      <thead>
+        <tr><th>Rank</th><th>Name</th><th>Quantity</th></tr>
+      </thead>
+      <tbody id="top3Body"></tbody>
+    </table>
+  </div>
+
+  <div class="glass-panel">
+    <h2>🧾 Total Orders</h2>
+    <table>
+      <thead>
+        <tr><th>Partner Name</th><th>Quantity</th></tr>
+      </thead>
+      <tbody id="ordersTableBody"></tbody>
+    </table>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <script>
+    let dingSound = new Audio('ding.mp3');
+    let applauseSound = new Audio('applause.mp3');
+
+    function triggerFireworks() {
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: Math.random() * 0.6 }
+          });
+        }, i * 500);
+      }
+    }
+
+    function updateBanner(message) {
+      const banner = document.getElementById("latestBanner");
+      banner.textContent = message;
+      banner.style.display = "block";
+      banner.style.animation = "none";
+      banner.offsetHeight;
+      banner.style.animation = "fadeHighlight 1s ease-in-out";
+      clearTimeout(window.latestBannerTimeout);
+      window.latestBannerTimeout = setTimeout(() => {
+        banner.style.display = "none";
+      }, 6000);
+    }
+
+    function updateStage() {
+      const orders = JSON.parse(localStorage.orders || '{}');
+      let recentList = JSON.parse(localStorage.recentList || '[]');
+
+      if (localStorage.lastPartner) {
+        const partner = localStorage.lastPartner;
+        recentList = recentList.filter(d => d !== partner);
+        recentList.unshift(partner);
+        localStorage.recentList = JSON.stringify(recentList);
+      }
+
+      const table = document.getElementById('ordersTableBody');
+      const top3 = document.getElementById('top3Body');
+      table.innerHTML = '';
+      top3.innerHTML = '';
+
+      recentList.forEach(partner => {
+        if (orders[partner] !== undefined) {
+          table.innerHTML += `<tr><td>${partner}</td><td>${orders[partner]}</td></tr>`;
+        }
+      });
+
+      const sorted = Object.entries(orders).sort((a, b) => b[1] - a[1]);
+      const medals = ['🥇', '🥈', '🥉'];
+      sorted.slice(0, 3).forEach(([partner, qty], i) => {
+        top3.innerHTML += `<tr><td>${medals[i]}</td><td>${partner}</td><td>${qty}</td></tr>`;
+      });
+
+      if (localStorage.newOrder === 'yes') {
+        localStorage.newOrder = 'no';
+        const latestText = localStorage.latestOrder || "New Order!";
+        updateBanner(latestText);
+        triggerFireworks();
+        if (localStorage.soundEnabled === "true") {
+          dingSound.play();
+          applauseSound.play();
+        }
+      }
+    }
+
+    setInterval(updateStage, 1000);
+  </script>
+</body>
+</html>

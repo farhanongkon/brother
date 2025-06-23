@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #004e92, #000428);
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .panel {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      width: 400px;
+      text-align: center;
+      position: relative;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      font-weight: 600;
+      border: none;
+      height: 45px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+    .actions button {
+      flex: 1;
+    }
+    .suggestions {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      max-height: 150px;
+      overflow-y: auto;
+      z-index: 10;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      display: none;
+      text-align: left;
+      top: 100%;
+      left: 0;
+    }
+    .suggestion {
+      padding: 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .suggestion:hover {
+      background-color: #007bff;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h2>Admin Panel</h2>
+
+    <div style="position: relative;">
+      <input type="text" id="partnerName" placeholder="Type partner name" oninput="showSuggestions()" autocomplete="off">
+      <div class="suggestions" id="suggestionBox"></div>
+    </div>
+
+    <input type="number" id="quantity" placeholder="Enter Quantity">
+    <button onclick="submitOrder()">Submit / Update Order</button>
+    <button onclick="deletePartner()">❌ Delete This Partner</button>
+
+    <div class="actions">
+      <button onclick="clearLastPartner()">Clear Last Partner</button>
+      <button onclick="resetOrders()">Reset All Orders</button>
+    </div>
+
+    <button onclick="clearInputs()">Clear Input Fields</button>
+    <button onclick="enableSound()">🔊 Enable Audio on Stage</button>
+    <button onclick="disableSound()">🔇 Disable Audio on Stage</button>
+  </div>
+
+  <script>
+    const allowedPartners = [
+      "A.K. COMPUTER-ECS", "AANHA TECHNOLOGIES-ECS", "ANR Technoligies", "ASIACOM-MB", "Ai Computers-Mirpur",
+      "Amin Computer-BDB", "Arpanet-jSR", "CITY COMPUTER & TECHNOLOGY-ECS", "COMPUTER MATE - Meherpur",
+      "COMPUTER VILLAGE,CTG", "COMPUTER VISION-Rangpur", "COMTRADE-IDB", "CREATIVE COMPUTER-COX BAZAR",
+      "Cloud Technologies", "Computer Village", "DAFFODIL -IDB", "DOLPHIN COMPUTER-IDB", "Dream Computer",
+      "Eerna Ltd", "Green View Computer", "HAZI TECH-ECS", "HAZI TRADERS-MB", "HIFI COMPUTER - SYLHET",
+      "Hamim Enterprise-ECS", "Hello Computer & Technology (Cox’s Bazar)", "INTERWAVE COMPUTERS-Khulna",
+      "IT Buddy", "IT PALACE- CTG.", "JANANI COMPUTERS-CTG", "JS Computer", "Kazi Brothers(Rajshahi)",
+      "Kona Computer - Jamalpur", "LOTUS COMPUTER", "M M COMPUTER", "Mabin Computer",
+      "Mohasin Computer & Electronics", "Multi System Solution-CTG", "NATIONAL COMPUTER-MB", "NCLL",
+      "NEXUS- IDB", "NIXSOLETECH-ECS", "Nyta Computer & Technologies - CTG", "ONESTOP SERVICE & SOLUTION -IDB",
+      "PC Solution - CTG", "POWER LINE COMPUTER-CTG", "PRINTER CITY-MB", "PRINTER SOLUTION-ECS",
+      "Palash Computer", "Perfect Computer-Tangail", "Pixels Computer", "Prime Computer-Jsr",
+      "Quality Computers-CTG", "RISHIT COMPUTER-IDB", "RS Computers System - IDB", "Regency Technologies",
+      "Royal Computer City- Chakaria", "Ryans It Ltd.", "S.S COMPUTER & NETWORK (UTTARA)",
+      "SANNY COMPUTER- SHERPUR", "SHOVO PHOTO ITEMS - MYMENSING", "SMART VIEW COMPUTERS & ELECTRONICS",
+      "SOURCE & SERVICE-MB", "SUCCESS COMPUTER & ENGINEERS", "SYS Computers Ltd. - IDB", "Star Tech Ltd.",
+      "Sundarban IT-ECS", "T.S Computer Sales & Service-MYM", "TECHLAND", "TUBA TRADE INTERNATIONAL-MB",
+      "Techno City", "Trust International technology", "UTTARA PRINT WORLD-UTTARA", "Win Trade International"
+    ];
+
+    function showSuggestions() {
+      const input = document.getElementById("partnerName");
+      const suggestionBox = document.getElementById("suggestionBox");
+      const val = input.value.toLowerCase();
+      suggestionBox.innerHTML = '';
+      if (!val) return suggestionBox.style.display = 'none';
+      const matches = allowedPartners.filter(name => name.toLowerCase().includes(val));
+      suggestionBox.style.display = matches.length ? 'block' : 'none';
+      matches.forEach(name => {
+        const div = document.createElement("div");
+        div.className = "suggestion";
+        div.textContent = name;
+        div.onclick = () => {
+          input.value = name;
+          suggestionBox.style.display = 'none';
+        };
+        suggestionBox.appendChild(div);
+      });
+    }
+
+    function submitOrder() {
+      const partnerInput = document.getElementById("partnerName").value.trim();
+      const quantity = parseInt(document.getElementById("quantity").value);
+      const partner = allowedPartners.find(p => p.toLowerCase() === partnerInput.toLowerCase());
+      if (!partner) return alert("Select a valid partner from suggestion.");
+      if (isNaN(quantity)) return alert("Enter a valid quantity.");
+      const orders = JSON.parse(localStorage.orders || '{}');
+      orders[partner] = quantity;
+      localStorage.orders = JSON.stringify(orders);
+      localStorage.lastPartner = partner;
+      localStorage.newOrder = "yes";
+      localStorage.latestOrder = `${partner} ordered ${quantity} pcs!`;
+      alert("Order saved.");
+    }
+
+    function deletePartner() {
+      const partnerInput = document.getElementById("partnerName").value.trim();
+      const partner = allowedPartners.find(p => p.toLowerCase() === partnerInput.toLowerCase());
+      if (!partner) return alert("Select a valid partner.");
+      const orders = JSON.parse(localStorage.orders || '{}');
+      delete orders[partner];
+      localStorage.orders = JSON.stringify(orders);
+      alert(`${partner} removed.`);
+    }
+
+    function clearLastPartner() {
+      const partner = localStorage.lastPartner;
+      if (!partner) return alert("No last partner.");
+      const orders = JSON.parse(localStorage.orders || '{}');
+      delete orders[partner];
+      localStorage.orders = JSON.stringify(orders);
+      localStorage.removeItem("lastPartner");
+      alert("Last partner cleared.");
+    }
+
+    function resetOrders() {
+      if (confirm("Reset all orders?")) {
+        localStorage.clear();
+        alert("All orders reset.");
+      }
+    }
+
+    function clearInputs() {
+      document.getElementById("partnerName").value = '';
+      document.getElementById("quantity").value = '';
+      document.getElementById("suggestionBox").style.display = 'none';
+    }
+
+    function enableSound() {
+      localStorage.soundEnabled = "true";
+      alert("Sound enabled for stage.");
+    }
+
+    function disableSound() {
+      localStorage.soundEnabled = "false";
+      alert("Sound disabled for stage.");
+    }
+
+    document.addEventListener("click", function (e) {
+      const suggestionBox = document.getElementById("suggestionBox");
+      const input = document.getElementById("partnerName");
+      if (!suggestionBox.contains(e.target) && e.target !== input) {
+        suggestionBox.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
