@@ -4,66 +4,103 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stage Display</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     body {
       margin: 0;
-      padding: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(to right, #0f4c81, #0b1e3f);
-      color: white;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #02468c, #0a1a3f);
+      color: #fff;
       text-align: center;
     }
 
-    h1 {
-      margin-top: 20px;
+    .top-bar {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 40px;
     }
 
-    .table-wrapper {
-      margin: 30px auto;
-      width: 80%;
-      background: rgba(255, 255, 255, 0.1);
+    .top-bar img {
+      height: 60px;
+    }
+
+    .top-bar .center-logo {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 90px;
+    }
+
+    .section {
+      margin: 20px auto;
+      max-width: 80%;
+      background-color: rgba(255, 255, 255, 0.05);
+      padding: 15px;
       border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.3);
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.5em;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background-color: rgba(255,255,255,0.05);
+      background-color: rgba(255, 255, 255, 0.08);
     }
 
     th, td {
-      padding: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding: 10px;
+      font-size: 1.2em;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     th {
-      background-color: rgba(255,255,255,0.1);
-    }
-
-    .top3 {
-      font-size: 1.2rem;
-    }
-
-    .medal {
-      font-size: 1.4rem;
+      background-color: rgba(255, 255, 255, 0.15);
     }
   </style>
 </head>
 <body>
-  <h1>🏆 Top 3 Buyer</h1>
-  <div class="table-wrapper" id="top3"></div>
+  <div class="top-bar">
+    <img src="global_brand_logo.png" alt="Global Brand Logo">
+    <img class="center-logo" src="mnemonic.png" alt="Mnemonic Logo">
+    <img src="brother_logo.png" alt="Brother Logo">
+  </div>
 
-  <h1>🧾 Total Orders</h1>
-  <div class="table-wrapper" id="orders"></div>
+  <div class="section">
+    <h2>🏆 Top 3 Buyer</h2>
+    <table id="topBuyers">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Quantity</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  <audio id="ding" src="ding.mp3" preload="auto"></audio>
-  <audio id="applause" src="applause.mp3" preload="auto"></audio>
+  <div class="section">
+    <h2>🗒️ Total Orders</h2>
+    <table id="totalOrders">
+      <thead>
+        <tr>
+          <th>Partner Name</th>
+          <th>Quantity</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAk8lBWkIA3WrLNpESQNFUEzHitt4xyfvk",
@@ -72,61 +109,41 @@
       storageBucket: "brother-bd878.appspot.com",
       messagingSenderId: "596689886946",
       appId: "1:596689886946:web:97651f20295d929d3308bb",
+      measurementId: "G-67CZ9CZ6HF",
       databaseURL: "https://brother-bd878-default-rtdb.firebaseio.com/"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-
     const ordersRef = ref(db, 'orders');
-    const audioRef = ref(db, 'audio');
-    let soundEnabled = false;
-    let lastPlayed = 0;
 
-    onValue(audioRef, snap => {
-      if (snap.exists()) {
-        soundEnabled = snap.val().state === "on";
+    function updateStageUI(data) {
+      const allOrders = [];
+      for (const name in data) {
+        allOrders.push({ name, quantity: data[name] });
       }
-    });
 
-    onValue(ordersRef, snapshot => {
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        const list = Object.values(data).sort((a, b) => b.quantity - a.quantity);
-        renderOrders(list);
-        renderTop3(list);
+      const sorted = [...allOrders].sort((a, b) => b.quantity - a.quantity);
+      const top3 = sorted.slice(0, 3);
 
-        if (soundEnabled) {
-          const newest = Math.max(...list.map(o => o.timestamp || 0));
-          if (newest > lastPlayed) {
-            document.getElementById('ding').play();
-            lastPlayed = newest;
-          }
-        }
-      } else {
-        document.getElementById('orders').innerHTML = "<p>No orders yet.</p>";
-        document.getElementById('top3').innerHTML = "<p>Top 3 will appear here.</p>";
-      }
-    });
+      const topTable = document.querySelector('#topBuyers tbody');
+      topTable.innerHTML = '';
+      top3.forEach((entry, i) => {
+        const medal = ['🥇', '🥈', '🥉'][i];
+        topTable.innerHTML += `<tr><td>${medal}</td><td>${entry.name}</td><td>${entry.quantity}</td></tr>`;
+      });
 
-    function renderOrders(list) {
-      let html = `<table>
-        <tr><th>Partner Name</th><th>Quantity</th></tr>
-        ${list.map(item => `<tr><td>${item.name}</td><td>${item.quantity}</td></tr>`).join("")}
-      </table>`;
-      document.getElementById('orders').innerHTML = html;
+      const totalTable = document.querySelector('#totalOrders tbody');
+      totalTable.innerHTML = '';
+      sorted.forEach(entry => {
+        totalTable.innerHTML += `<tr><td>${entry.name}</td><td>${entry.quantity}</td></tr>`;
+      });
     }
 
-    function renderTop3(list) {
-      const medals = ['🥇','🥈','🥉'];
-      let html = `<table>
-        <tr><th>Rank</th><th>Name</th><th>Quantity</th></tr>
-        ${list.slice(0, 3).map((item, i) =>
-          `<tr><td class="medal">${medals[i]}</td><td>${item.name}</td><td>${item.quantity}</td></tr>`
-        ).join("")}
-      </table>`;
-      document.getElementById('top3').innerHTML = html;
-    }
+    onValue(ordersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) updateStageUI(data);
+    });
   </script>
 </body>
 </html>
